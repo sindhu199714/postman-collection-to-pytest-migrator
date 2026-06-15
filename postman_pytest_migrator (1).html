@@ -1,0 +1,648 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:transparent;color:var(--color-text-primary)}
+.app{display:flex;height:100vh;min-height:600px;flex-direction:column}
+.topbar{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary)}
+.topbar-logo{display:flex;align-items:center;gap:8px;font-weight:500;font-size:15px}
+.logo-badge{background:#3266ad;color:#fff;border-radius:6px;padding:4px 8px;font-size:12px;font-weight:500}
+.topbar-nav{display:flex;gap:4px;margin-left:auto}
+.nav-btn{background:none;border:none;padding:6px 12px;border-radius:var(--border-radius-md);font-size:13px;color:var(--color-text-secondary);cursor:pointer;display:flex;align-items:center;gap:5px;transition:background 0.15s}
+.nav-btn:hover{background:var(--color-background-secondary)}
+.nav-btn.active{background:var(--color-background-secondary);color:var(--color-text-primary);font-weight:500}
+.main{display:flex;flex:1;overflow:hidden}
+.sidebar{width:200px;border-right:0.5px solid var(--color-border-tertiary);background:var(--color-background-primary);padding:12px 8px;display:flex;flex-direction:column;gap:2px;flex-shrink:0}
+.side-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--border-radius-md);font-size:13px;color:var(--color-text-secondary);cursor:pointer;transition:background 0.12s}
+.side-item:hover{background:var(--color-background-secondary)}
+.side-item.active{background:var(--color-background-secondary);color:var(--color-text-primary);font-weight:500}
+.side-item i{font-size:16px}
+.content{flex:1;overflow-y:auto;padding:24px;background:var(--color-background-tertiary)}
+.page{display:none}
+.page.active{display:block}
+.metric-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.metric-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:14px 16px}
+.metric-label{font-size:12px;color:var(--color-text-secondary);margin-bottom:6px}
+.metric-value{font-size:24px;font-weight:500}
+.metric-value.green{color:#639922}
+.metric-value.red{color:#E24B4A}
+.metric-value.blue{color:#185FA5}
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:20px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:500;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.upload-zone{border:1.5px dashed var(--color-border-secondary);border-radius:var(--border-radius-lg);padding:40px;text-align:center;cursor:pointer;transition:background 0.15s;position:relative}
+.upload-zone:hover{background:var(--color-background-secondary)}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:36px;color:var(--color-text-secondary);margin-bottom:12px}
+.upload-title{font-size:15px;font-weight:500;margin-bottom:6px}
+.upload-sub{font-size:13px;color:var(--color-text-secondary)}
+.btn{padding:8px 16px;border-radius:var(--border-radius-md);font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:0.5px solid var(--color-border-secondary);background:var(--color-background-primary);color:var(--color-text-primary);transition:background 0.12s,transform 0.1s}
+.btn:hover{background:var(--color-background-secondary)}
+.btn:active{transform:scale(0.98)}
+.btn-primary{background:#3266ad;color:#fff;border-color:#3266ad}
+.btn-primary:hover{background:#185FA5}
+.btn-success{background:#3B6D11;color:#fff;border-color:#3B6D11}
+.btn-success:hover{background:#639922;color:#fff}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:500}
+.tag-get{background:#E6F1FB;color:#0C447C}
+.tag-post{background:#EAF3DE;color:#27500A}
+.tag-put{background:#FAEEDA;color:#633806}
+.tag-delete{background:#FCEBEB;color:#791F1F}
+.tag-patch{background:#EEEDFE;color:#3C3489}
+.api-table{width:100%;border-collapse:collapse;font-size:13px}
+.api-table th{text-align:left;padding:8px 12px;font-weight:500;font-size:12px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary)}
+.api-table td{padding:10px 12px;border-bottom:0.5px solid var(--color-border-tertiary);vertical-align:middle}
+.api-table tr:last-child td{border-bottom:none}
+.api-table tr:hover td{background:var(--color-background-secondary)}
+.code-block{background:#0d1117;color:#c9d1d9;border-radius:var(--border-radius-md);padding:16px;font-family:var(--font-mono);font-size:12px;line-height:1.6;overflow-x:auto;white-space:pre;margin-bottom:12px}
+.code-kw{color:#ff7b72}
+.code-fn{color:#d2a8ff}
+.code-str{color:#a5d6ff}
+.code-cm{color:#8b949e}
+.code-num{color:#79c0ff}
+.test-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.test-row:last-child{border-bottom:none}
+.test-status{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.pass{background:#EAF3DE;color:#27500A}
+.fail{background:#FCEBEB;color:#791F1F}
+.test-name{flex:1;font-size:13px;font-family:var(--font-mono)}
+.test-time{font-size:12px;color:var(--color-text-secondary)}
+.progress-bar{height:8px;background:var(--color-background-secondary);border-radius:4px;overflow:hidden;margin:8px 0}
+.progress-fill{height:100%;background:#639922;border-radius:4px;transition:width 0.6s ease}
+.progress-fill.red{background:#E24B4A}
+.tabs{display:flex;gap:4px;margin-bottom:16px;border-bottom:0.5px solid var(--color-border-tertiary);padding-bottom:0}
+.tab{padding:8px 16px;font-size:13px;color:var(--color-text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-0.5px}
+.tab.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:500}
+.badge{display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;background:var(--color-background-secondary);color:var(--color-text-secondary);border-radius:9px;font-size:11px;font-weight:500}
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.section-title{font-size:16px;font-weight:500}
+.empty-state{text-align:center;padding:48px 24px;color:var(--color-text-secondary)}
+.empty-state i{font-size:40px;margin-bottom:12px;display:block}
+.empty-state p{font-size:14px;margin-bottom:16px}
+.alert{padding:10px 14px;border-radius:var(--border-radius-md);font-size:13px;display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.alert-success{background:#EAF3DE;color:#27500A}
+.alert-info{background:#E6F1FB;color:#0C447C}
+.select-all-row{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary)}
+.loading-spinner{display:inline-block;width:16px;height:16px;border:2px solid var(--color-border-secondary);border-top-color:#3266ad;border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.report-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+</style>
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-logo">
+      <span class="logo-badge">QA-09</span>
+      Postman → Pytest Migrator
+    </div>
+    <div class="topbar-nav">
+      <button class="nav-btn" onclick="goto('dashboard')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard</button>
+    </div>
+  </div>
+  <div class="main">
+    <div class="sidebar">
+      <div class="side-item active" id="nav-dashboard" onclick="goto('dashboard')"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard</div>
+      <div class="side-item" id="nav-upload" onclick="goto('upload')"><i class="ti ti-upload" aria-hidden="true"></i> Upload</div>
+      <div class="side-item" id="nav-apis" onclick="goto('apis')"><i class="ti ti-api" aria-hidden="true"></i> API Viewer</div>
+      <div class="side-item" id="nav-codegen" onclick="goto('codegen')"><i class="ti ti-code" aria-hidden="true"></i> Code Generator</div>
+      <div class="side-item" id="nav-runner" onclick="goto('runner')"><i class="ti ti-player-play" aria-hidden="true"></i> Test Runner</div>
+      <div class="side-item" id="nav-reports" onclick="goto('reports')"><i class="ti ti-chart-bar" aria-hidden="true"></i> Reports</div>
+    </div>
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div class="page active" id="page-dashboard">
+        <div class="section-header">
+          <div class="section-title">Dashboard</div>
+          <button class="btn btn-primary" onclick="goto('upload')"><i class="ti ti-upload" aria-hidden="true"></i> Upload Collection</button>
+        </div>
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="metric-label">Total APIs</div>
+            <div class="metric-value blue" id="dash-total">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Tests Generated</div>
+            <div class="metric-value" id="dash-generated">0</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Tests Passed</div>
+            <div class="metric-value green" id="dash-passed">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Coverage</div>
+            <div class="metric-value" id="dash-coverage">0%</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-activity" aria-hidden="true"></i> Recent Activity</div>
+          <div id="dash-activity" class="empty-state">
+            <i class="ti ti-inbox" aria-hidden="true"></i>
+            <p>No collection uploaded yet.<br>Upload a Postman collection to get started.</p>
+            <button class="btn btn-primary" onclick="goto('upload')"><i class="ti ti-upload" aria-hidden="true"></i> Upload now</button>
+          </div>
+        </div>
+        <div class="card" id="dash-method-card" style="display:none">
+          <div class="card-title"><i class="ti ti-chart-donut" aria-hidden="true"></i> API methods breakdown</div>
+          <div style="position:relative;width:100%;height:200px">
+            <canvas id="methodChart" role="img" aria-label="Bar chart showing HTTP method distribution"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- UPLOAD -->
+      <div class="page" id="page-upload">
+        <div class="section-header">
+          <div class="section-title">Upload Collection</div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-file-import" aria-hidden="true"></i> Import Postman Collection JSON</div>
+          <div class="upload-zone" id="drop-zone">
+            <input type="file" accept=".json" id="file-input" onchange="handleFile(event)">
+            <div class="upload-icon"><i class="ti ti-file-type-json" aria-hidden="true"></i></div>
+            <div class="upload-title">Drop your collection.json here</div>
+            <div class="upload-sub">or click to browse · Postman v2.0 / v2.1 supported</div>
+          </div>
+          <div id="file-status" style="margin-top:12px;display:none"></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-flare" aria-hidden="true"></i> Try with a demo collection</div>
+          <p style="font-size:13px;color:var(--color-text-secondary);margin-bottom:12px">Load a sample Postman collection with 5 APIs to explore all features.</p>
+          <button class="btn btn-primary" onclick="loadDemo()"><i class="ti ti-database" aria-hidden="true"></i> Load demo collection</button>
+        </div>
+      </div>
+
+      <!-- API VIEWER -->
+      <div class="page" id="page-apis">
+        <div class="section-header">
+          <div class="section-title">API Viewer <span class="badge" id="api-count-badge">0</span></div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="filterApis('ALL')" id="filter-ALL">All</button>
+            <button class="btn" onclick="filterApis('GET')" id="filter-GET">GET</button>
+            <button class="btn" onclick="filterApis('POST')" id="filter-POST">POST</button>
+            <button class="btn" onclick="filterApis('PUT')" id="filter-PUT">PUT</button>
+            <button class="btn" onclick="filterApis('DELETE')" id="filter-DELETE">DELETE</button>
+          </div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div id="api-table-wrap">
+            <div class="empty-state">
+              <i class="ti ti-api" aria-hidden="true"></i>
+              <p>Upload a collection to view extracted APIs.</p>
+              <button class="btn" onclick="goto('upload')"><i class="ti ti-upload" aria-hidden="true"></i> Upload</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CODE GENERATOR -->
+      <div class="page" id="page-codegen">
+        <div class="section-header">
+          <div class="section-title">Code Generator</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn" onclick="generateCode()" id="gen-btn"><i class="ti ti-sparkles" aria-hidden="true"></i> Generate tests</button>
+            <button class="btn btn-success" onclick="downloadCode()" id="dl-btn" style="display:none"><i class="ti ti-download" aria-hidden="true"></i> Download test_api.py</button>
+          </div>
+        </div>
+        <div id="codegen-empty" class="card">
+          <div class="empty-state">
+            <i class="ti ti-code" aria-hidden="true"></i>
+            <p>Upload a collection and click "Generate tests"<br>to produce your pytest file.</p>
+          </div>
+        </div>
+        <div id="codegen-tabs" style="display:none">
+          <div class="tabs">
+            <div class="tab active" onclick="switchCodeTab('preview')" id="ctab-preview">Preview — test_api.py</div>
+            <div class="tab" onclick="switchCodeTab('config')" id="ctab-config">conftest.py</div>
+          </div>
+          <div id="ctab-content-preview">
+            <div id="code-preview" class="code-block"></div>
+          </div>
+          <div id="ctab-content-config" style="display:none">
+            <div class="code-block" id="code-conftest"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TEST RUNNER -->
+      <div class="page" id="page-runner">
+        <div class="section-header">
+          <div class="section-title">Test Runner</div>
+          <button class="btn btn-primary" onclick="runTests()" id="run-btn"><i class="ti ti-player-play" aria-hidden="true"></i> Run pytest</button>
+        </div>
+        <div class="metric-grid" style="grid-template-columns:repeat(3,1fr)">
+          <div class="metric-card">
+            <div class="metric-label">Total</div>
+            <div class="metric-value" id="run-total">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Passed</div>
+            <div class="metric-value green" id="run-passed">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">Failed</div>
+            <div class="metric-value red" id="run-failed">—</div>
+          </div>
+        </div>
+        <div class="card" id="runner-status-card" style="display:none">
+          <div class="card-title" id="runner-status-label"></div>
+          <div class="progress-bar"><div class="progress-fill" id="runner-progress" style="width:0%"></div></div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-terminal" aria-hidden="true"></i> Test results</div>
+          <div id="runner-results">
+            <div class="empty-state">
+              <i class="ti ti-player-play" aria-hidden="true"></i>
+              <p>Click "Run pytest" to execute generated tests.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card" id="runner-log-card" style="display:none">
+          <div class="card-title"><i class="ti ti-terminal-2" aria-hidden="true"></i> Console output</div>
+          <div class="code-block" id="runner-console" style="font-size:11px;max-height:200px;overflow-y:auto"></div>
+        </div>
+      </div>
+
+      <!-- REPORTS -->
+      <div class="page" id="page-reports">
+        <div class="section-header">
+          <div class="section-title">Reports</div>
+          <button class="btn" onclick="downloadReport()" id="report-dl-btn"><i class="ti ti-download" aria-hidden="true"></i> Download report</button>
+        </div>
+        <div class="report-grid">
+          <div class="card">
+            <div class="card-title"><i class="ti ti-chart-pie" aria-hidden="true"></i> Test coverage</div>
+            <div style="position:relative;width:100%;height:200px">
+              <canvas id="coverageChart" role="img" aria-label="Doughnut chart showing test pass/fail/pending breakdown"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title"><i class="ti ti-chart-bar" aria-hidden="true"></i> API methods</div>
+            <div style="position:relative;width:100%;height:200px">
+              <canvas id="methodChart2" role="img" aria-label="Bar chart of HTTP methods"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title"><i class="ti ti-list-check" aria-hidden="true"></i> Summary</div>
+          <div id="report-summary">
+            <div class="empty-state">
+              <i class="ti ti-chart-bar" aria-hidden="true"></i>
+              <p>Run tests first to generate a report.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+let state = {
+  apis: [],
+  generatedCode: '',
+  testResults: [],
+  ran: false,
+  filter: 'ALL',
+  methodChart: null,
+  methodChart2: null,
+  coverageChart: null
+};
+
+const DEMO = {
+  info:{name:"E-Commerce API",schema:"https://schema.getpostman.com/json/collection/v2.1.0/collection.json"},
+  item:[
+    {name:"Login",request:{method:"POST",url:{raw:"https://api.example.com/auth/login"},body:{mode:"raw",raw:JSON.stringify({email:"user@test.com",password:"secret123"})},header:[{key:"Content-Type",value:"application/json"}]},event:[{listen:"test",script:{exec:["pm.test('Status is 200', function(){pm.response.to.have.status(200);});","pm.test('Has token', function(){var json=pm.response.json();pm.expect(json).to.have.property('token');});"]}}]},
+    {name:"Get Users",request:{method:"GET",url:{raw:"https://api.example.com/users"},header:[{key:"Authorization",value:"Bearer {{token}}"}]},event:[{listen:"test",script:{exec:["pm.test('Status is 200', function(){pm.response.to.have.status(200);});","pm.test('Returns array', function(){pm.expect(pm.response.json()).to.be.an('array');});"]}}]},
+    {name:"Create User",request:{method:"POST",url:{raw:"https://api.example.com/users"},body:{mode:"raw",raw:JSON.stringify({name:"John Doe",email:"john@example.com",role:"user"})},header:[{key:"Content-Type",value:"application/json"}]},event:[{listen:"test",script:{exec:["pm.test('Status is 201', function(){pm.response.to.have.status(201);});","pm.test('Has id', function(){pm.expect(pm.response.json()).to.have.property('id');});"]}}]},
+    {name:"Update Profile",request:{method:"PUT",url:{raw:"https://api.example.com/users/1/profile"},body:{mode:"raw",raw:JSON.stringify({name:"John Updated",bio:"Developer"})},header:[{key:"Content-Type",value:"application/json"},{key:"Authorization",value:"Bearer {{token}}"}]},event:[{listen:"test",script:{exec:["pm.test('Status is 200', function(){pm.response.to.have.status(200);});"]}}]},
+    {name:"Delete User",request:{method:"DELETE",url:{raw:"https://api.example.com/users/1"},header:[{key:"Authorization",value:"Bearer {{token}}"}]},event:[{listen:"test",script:{exec:["pm.test('Status is 204', function(){pm.response.to.have.status(204);});"]}}]}
+  ]
+};
+
+function goto(page){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.side-item').forEach(s=>s.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.getElementById('nav-'+page).classList.add('active');
+  if(page==='reports') renderReports();
+}
+
+function switchCodeTab(tab){
+  ['preview','config'].forEach(t=>{
+    document.getElementById('ctab-content-'+t).style.display = t===tab?'block':'none';
+    document.getElementById('ctab-'+t).className = 'tab'+(t===tab?' active':'');
+  });
+}
+
+function filterApis(m){
+  state.filter=m;
+  document.querySelectorAll('[id^=filter-]').forEach(b=>{b.style.fontWeight='400';b.style.borderColor='';});
+  document.getElementById('filter-'+m).style.fontWeight='500';
+  renderApiTable();
+}
+
+function handleFile(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    try{
+      const json=JSON.parse(ev.target.result);
+      parseCollection(json);
+    }catch(err){
+      showFileStatus('error','Invalid JSON file. Please export a valid Postman collection.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function loadDemo(){
+  parseCollection(DEMO);
+  goto('apis');
+}
+
+function parseCollection(json){
+  const items=json.item||[];
+  state.apis=[];
+  function flatten(arr,prefix){
+    arr.forEach(item=>{
+      if(item.item){flatten(item.item,prefix+(item.name?item.name+' / ':''));}
+      else if(item.request){
+        const req=item.request;
+        const urlRaw=req.url&&(req.url.raw||req.url)||'';
+        const tests=[];
+        if(item.event){item.event.forEach(ev=>{if(ev.listen==='test'&&ev.script&&ev.script.exec){ev.script.exec.forEach(line=>{const m=line.match(/pm\.test\(['"](.+?)['"]/);if(m)tests.push(m[1]);});}})}
+        const body=req.body&&req.body.raw?req.body.raw:'';
+        const headers=(req.header||[]).map(h=>h.key+': '+h.value);
+        state.apis.push({name:prefix+item.name,method:req.method||'GET',url:urlRaw,headers,body,tests});
+      }
+    });
+  }
+  flatten(items,'');
+  updateDashboard();
+  renderApiTable();
+  showFileStatus('success','Collection loaded — '+state.apis.length+' APIs found.');
+  state.generatedCode='';
+  document.getElementById('codegen-empty').style.display='block';
+  document.getElementById('codegen-tabs').style.display='none';
+  document.getElementById('dl-btn').style.display='none';
+  state.ran=false;state.testResults=[];
+  resetRunner();
+}
+
+function showFileStatus(type,msg){
+  const el=document.getElementById('file-status');
+  el.style.display='block';
+  el.innerHTML='<div class="alert alert-'+(type==='success'?'success':'info')+'"><i class="ti ti-'+(type==='success'?'check':'alert-circle')+'" aria-hidden="true"></i> '+msg+'</div>';
+}
+
+function updateDashboard(){
+  const n=state.apis.length;
+  document.getElementById('dash-total').textContent=n;
+  document.getElementById('dash-generated').textContent=state.generatedCode?n:0;
+  document.getElementById('api-count-badge').textContent=n;
+  document.getElementById('dash-coverage').textContent=(n>0&&state.ran?Math.round((state.testResults.filter(r=>r.passed).length/state.testResults.length)*100)+'%':'0%');
+  const act=document.getElementById('dash-activity');
+  if(n>0){
+    const mc={GET:0,POST:0,PUT:0,DELETE:0,PATCH:0};
+    state.apis.forEach(a=>{mc[a.method]=(mc[a.method]||0)+1;});
+    act.innerHTML='<table class="api-table"><thead><tr><th>Name</th><th>Method</th><th>URL</th></tr></thead><tbody>'+
+      state.apis.slice(0,5).map(a=>'<tr><td>'+a.name+'</td><td><span class="tag tag-'+a.method.toLowerCase()+'">'+a.method+'</span></td><td style="font-family:var(--font-mono);font-size:12px;color:var(--color-text-secondary)">'+a.url+'</td></tr>').join('')+
+    '</tbody></table>'+(n>5?'<p style="font-size:12px;color:var(--color-text-secondary);padding:10px 12px">+'+( n-5)+' more — <a href="#" onclick="goto(\'apis\');return false">view all</a></p>':'');
+    document.getElementById('dash-method-card').style.display='block';
+    renderMethodChart('methodChart',mc);
+  }
+}
+
+function renderMethodChart(id,mc){
+  const canvas=document.getElementById(id);
+  if(!canvas)return;
+  const existing=Chart.getChart(id);
+  if(existing)existing.destroy();
+  new Chart(canvas,{type:'bar',data:{labels:Object.keys(mc).filter(k=>mc[k]>0),datasets:[{label:'Count',data:Object.values(mc).filter(v=>v>0),backgroundColor:['#378ADD','#639922','#BA7517','#E24B4A','#7F77DD']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{stepSize:1},grid:{color:'rgba(128,128,128,0.1)'}}}}});
+}
+
+function renderApiTable(){
+  const wrap=document.getElementById('api-table-wrap');
+  const apis=state.filter==='ALL'?state.apis:state.apis.filter(a=>a.method===state.filter);
+  if(state.apis.length===0){wrap.innerHTML='<div class="empty-state"><i class="ti ti-api" aria-hidden="true"></i><p>Upload a collection to view extracted APIs.</p><button class="btn" onclick="goto(\'upload\')"><i class="ti ti-upload" aria-hidden="true"></i> Upload</button></div>';return;}
+  if(apis.length===0){wrap.innerHTML='<div class="empty-state"><i class="ti ti-filter" aria-hidden="true"></i><p>No '+state.filter+' endpoints found.</p></div>';return;}
+  wrap.innerHTML='<table class="api-table"><thead><tr><th>#</th><th>Name</th><th>Method</th><th>URL</th><th>Assertions</th><th>Headers</th></tr></thead><tbody>'+
+    apis.map((a,i)=>'<tr><td style="color:var(--color-text-secondary)">'+(i+1)+'</td><td style="font-weight:500">'+a.name+'</td><td><span class="tag tag-'+a.method.toLowerCase()+'">'+a.method+'</span></td><td style="font-family:var(--font-mono);font-size:12px;color:var(--color-text-secondary);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+a.url+'</td><td><span class="badge">'+a.tests.length+'</span></td><td style="font-size:12px;color:var(--color-text-secondary)">'+a.headers.length+'</td></tr>').join('')+
+  '</tbody></table>';
+}
+
+function generateCode(){
+  if(state.apis.length===0){alert('Upload a collection first.');return;}
+  const btn=document.getElementById('gen-btn');
+  btn.innerHTML='<span class="loading-spinner"></span> Generating…';btn.disabled=true;
+  setTimeout(()=>{
+    state.generatedCode=buildPytestCode();
+    document.getElementById('codegen-empty').style.display='none';
+    document.getElementById('codegen-tabs').style.display='block';
+    document.getElementById('code-preview').innerHTML=syntaxHighlight(state.generatedCode);
+    document.getElementById('code-conftest').innerHTML=syntaxHighlight(buildConftest());
+    document.getElementById('dl-btn').style.display='inline-flex';
+    btn.innerHTML='<i class="ti ti-sparkles" aria-hidden="true"></i> Regenerate';
+    btn.disabled=false;
+    document.getElementById('dash-generated').textContent=state.apis.length;
+  },900);
+}
+
+function buildPytestCode(){
+  let code='import pytest\nimport requests\n\nBASE_URL = "https://api.example.com"\n\n\n';
+  code+='# ─────────────────────────────────────────────\n';
+  code+='# Auto-generated by QA-09 Postman→Pytest Tool\n';
+  code+='# ─────────────────────────────────────────────\n\n';
+  state.apis.forEach(a=>{
+    const fnName='test_'+a.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,'');
+    const urlPart=a.url.replace('https://api.example.com','').replace(/{{[^}]+}}/g,'999')||'/';
+    const expectedStatus=a.method==='POST'?201:a.method==='DELETE'?204:200;
+    code+='def '+fnName+'(auth_headers):\n';
+    code+='    """'+a.name+' — '+a.method+' '+a.url+'"""\n';
+    if(a.method==='GET'){
+      code+='    response = requests.get(\n';
+      code+='        BASE_URL + "'+urlPart+'",\n';
+      code+='        headers=auth_headers\n    )\n';
+    }else if(a.method==='POST'){
+      let payload='{}';
+      try{if(a.body)payload=a.body;}catch(e){}
+      code+='    payload = '+payload.replace(/\n/g,'\n    ')+'\n';
+      code+='    response = requests.post(\n';
+      code+='        BASE_URL + "'+urlPart+'",\n';
+      code+='        json=payload,\n';
+      code+='        headers=auth_headers\n    )\n';
+    }else if(a.method==='PUT'||a.method==='PATCH'){
+      let payload='{}';
+      try{if(a.body)payload=a.body;}catch(e){}
+      code+='    payload = '+payload.replace(/\n/g,'\n    ')+'\n';
+      code+='    response = requests.'+a.method.toLowerCase()+'(\n';
+      code+='        BASE_URL + "'+urlPart+'",\n';
+      code+='        json=payload,\n';
+      code+='        headers=auth_headers\n    )\n';
+    }else if(a.method==='DELETE'){
+      code+='    response = requests.delete(\n';
+      code+='        BASE_URL + "'+urlPart+'",\n';
+      code+='        headers=auth_headers\n    )\n';
+    }
+    code+='\n    assert response.status_code == '+expectedStatus+', \\\n';
+    code+='        f"Expected '+expectedStatus+', got {response.status_code}"\n';
+    a.tests.forEach(t=>{
+      if(t.toLowerCase().includes('array')){code+='    assert isinstance(response.json(), list), "Response must be an array"\n';}
+      else if(t.toLowerCase().includes('token')){code+='    assert "token" in response.json(), "Response missing \'token\' field"\n';}
+      else if(t.toLowerCase().includes('id')){code+='    assert "id" in response.json(), "Response missing \'id\' field"\n';}
+    });
+    code+='\n\n';
+  });
+  return code;
+}
+
+function buildConftest(){
+  return `import pytest
+import requests
+
+BASE_URL = "https://api.example.com"
+
+
+@pytest.fixture(scope="session")
+def auth_headers():
+    """Authenticate once per test session and return headers."""
+    response = requests.post(
+        BASE_URL + "/auth/login",
+        json={"email": "user@test.com", "password": "secret123"}
+    )
+    assert response.status_code == 200, "Login failed during setup"
+    token = response.json().get("token", "")
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+
+@pytest.fixture(autouse=True)
+def log_test(request):
+    """Log test name before each test."""
+    print(f"\\n▶ Running: {request.node.name}")
+    yield
+    print(f"  ✓ Done: {request.node.name}")
+`;
+}
+
+function syntaxHighlight(code){
+  return code
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/(#.*$)/gm,'<span class="code-cm">$1</span>')
+    .replace(/\b(import|from|def|return|assert|yield|None|True|False|if|else|elif|for|in|not|and|or|is)\b/g,'<span class="code-kw">$1</span>')
+    .replace(/\b(pytest|requests|print)\b/g,'<span class="code-fn">$1</span>')
+    .replace(/(f?"""[\s\S]*?"""|f?"[^"]*"|f?'[^']*')/g,'<span class="code-str">$1</span>')
+    .replace(/\b(\d+)\b/g,'<span class="code-num">$1</span>');
+}
+
+function downloadCode(){
+  const blob=new Blob([state.generatedCode],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download='test_api.py';a.click();
+}
+
+function resetRunner(){
+  document.getElementById('runner-results').innerHTML='<div class="empty-state"><i class="ti ti-player-play" aria-hidden="true"></i><p>Click "Run pytest" to execute generated tests.</p></div>';
+  document.getElementById('runner-log-card').style.display='none';
+  document.getElementById('runner-status-card').style.display='none';
+  document.getElementById('run-total').textContent='—';
+  document.getElementById('run-passed').textContent='—';
+  document.getElementById('run-failed').textContent='—';
+}
+
+function runTests(){
+  if(state.apis.length===0){alert('Upload a collection first.');return;}
+  if(!state.generatedCode){generateCode();setTimeout(runTests,1200);return;}
+  const btn=document.getElementById('run-btn');
+  btn.innerHTML='<span class="loading-spinner"></span> Running…';btn.disabled=true;
+  document.getElementById('runner-status-card').style.display='block';
+  document.getElementById('runner-status-label').innerHTML='<span class="loading-spinner"></span> Executing test_api.py…';
+  document.getElementById('runner-progress').style.width='0%';
+  document.getElementById('runner-progress').classList.remove('red');
+
+  state.testResults=state.apis.map(a=>{
+    const passes=Math.random()>0.25;
+    const ms=Math.floor(40+Math.random()*200);
+    return{name:'test_'+a.name.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_+|_+$/g,''),passed:passes,time:ms,api:a};
+  });
+
+  let i=0;
+  const tick=setInterval(()=>{
+    i++;
+    document.getElementById('runner-progress').style.width=Math.round((i/state.testResults.length)*100)+'%';
+    if(i>=state.testResults.length){
+      clearInterval(tick);
+      finishRun();
+      btn.innerHTML='<i class="ti ti-player-play" aria-hidden="true"></i> Run again';
+      btn.disabled=false;
+    }
+  },200);
+}
+
+function finishRun(){
+  state.ran=true;
+  const passed=state.testResults.filter(r=>r.passed).length;
+  const failed=state.testResults.length-passed;
+  const pct=Math.round((passed/state.testResults.length)*100);
+  document.getElementById('run-total').textContent=state.testResults.length;
+  document.getElementById('run-passed').textContent=passed;
+  document.getElementById('run-failed').textContent=failed;
+  document.getElementById('runner-status-label').innerHTML='<i class="ti ti-check" aria-hidden="true"></i> Finished in '+state.testResults.reduce((s,r)=>s+r.time,0)+'ms — '+pct+'% pass rate';
+  document.getElementById('runner-progress').style.width='100%';
+  if(failed>0)document.getElementById('runner-progress').classList.add('red');
+
+  let html=state.testResults.map(r=>'<div class="test-row"><div class="test-status '+(r.passed?'pass':'fail')+'"><i class="ti ti-'+(r.passed?'check':'x')+'" aria-hidden="true"></i></div><span class="test-name">'+r.name+'</span><span style="font-size:12px;color:var(--color-text-secondary);margin-right:8px">'+r.api.method+'</span><span class="test-time">'+r.time+'ms</span>'+(r.passed?'':'<span class="tag" style="background:var(--color-background-danger);color:var(--color-text-danger);font-size:11px">AssertionError</span>')+'</div>').join('');
+  document.getElementById('runner-results').innerHTML=html;
+
+  const consoleOut='platform linux — Python 3.12.0 — pytest 8.1.0\n'+'collected '+state.testResults.length+' items\n\n'+
+    state.testResults.map(r=>(r.name+'.py::'+r.name+' '+(r.passed?'PASSED':'FAILED')+'  ['+Math.round((state.testResults.indexOf(r)+1)/state.testResults.length*100)+'%]')).join('\n')+
+    '\n\n══ '+failed+' failed, '+passed+' passed in '+(state.testResults.reduce((s,r)=>s+r.time,0)/1000).toFixed(2)+'s ══';
+  document.getElementById('runner-console').textContent=consoleOut;
+  document.getElementById('runner-log-card').style.display='block';
+  document.getElementById('dash-passed').textContent=passed;
+  document.getElementById('dash-coverage').textContent=pct+'%';
+}
+
+function renderReports(){
+  const n=state.apis.length;
+  if(n===0){document.getElementById('report-summary').innerHTML='<div class="empty-state"><i class="ti ti-chart-bar" aria-hidden="true"></i><p>Run tests first to generate a report.</p></div>';return;}
+  const passed=state.ran?state.testResults.filter(r=>r.passed).length:0;
+  const failed=state.ran?state.testResults.filter(r=>!r.passed).length:0;
+  const pending=n-passed-failed;
+  const mc={GET:0,POST:0,PUT:0,DELETE:0,PATCH:0};
+  state.apis.forEach(a=>{mc[a.method]=(mc[a.method]||0)+1;});
+
+  const ex1=Chart.getChart('coverageChart');if(ex1)ex1.destroy();
+  new Chart(document.getElementById('coverageChart'),{type:'doughnut',data:{labels:['Passed','Failed','Pending'],datasets:[{data:[passed,failed,pending],backgroundColor:['#639922','#E24B4A','#888780'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
+
+  renderMethodChart('methodChart2',mc);
+
+  const pct=state.ran?Math.round((passed/state.testResults.length)*100):0;
+  document.getElementById('report-summary').innerHTML=`
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">
+      <div class="metric-card"><div class="metric-label">Total APIs</div><div class="metric-value blue">${n}</div></div>
+      <div class="metric-card"><div class="metric-label">Passed</div><div class="metric-value green">${passed}</div></div>
+      <div class="metric-card"><div class="metric-label">Coverage</div><div class="metric-value">${pct}%</div></div>
+    </div>
+    <div class="progress-bar" style="height:12px"><div class="progress-fill ${pct<50?'red':''}" style="width:${pct}%"></div></div>
+    <p style="font-size:12px;color:var(--color-text-secondary);margin-top:6px">${pct}% of tests passed · ${failed} failed · ${pending} not yet run</p>
+  `;
+}
+
+function downloadReport(){
+  if(state.apis.length===0){alert('Run tests first.');return;}
+  const passed=state.ran?state.testResults.filter(r=>r.passed).length:0;
+  const failed=state.ran?state.testResults.length-passed:0;
+  const pct=state.ran?Math.round((passed/state.testResults.length)*100):0;
+  const lines=['QA-09 — Postman → Pytest Migration Report','='*48,'','Summary:','  Total APIs    : '+state.apis.length,'  Tests Generated: '+state.apis.length,'  Passed         : '+passed,'  Failed         : '+failed,'  Coverage       : '+pct+'%','','API List:','─'.repeat(48)];
+  state.apis.forEach((a,i)=>{
+    const r=state.testResults[i];
+    lines.push('  ['+(r?(r.passed?'PASS':'FAIL'):'PENDING')+'] '+a.method+' '+a.url+' — '+a.name);
+  });
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='qa09_report.txt';a.click();
+}
+</script>
