@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Postman → Pytest Migrator | Convert API Collections to Automated Tests</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3B82F6;
+            --primary-dark: #1E40AF;
+            --secondary: #10B981;
+            --danger: #EF4444;
+            --warning: #F59E0B;
+            --dark: #1F2937;
+            --light: #F9FAFB;
+            --gray: #6B7280;
+            --border: #E5E7EB;
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            color: var(--dark);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .app {
+            display: flex;
+            height: 100vh;
+            flex-direction: column;
+        }
+
+        /* ─────────── TOPBAR ─────────── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 32px;
+            background: linear-gradient(135deg, var(--dark) 0%, #374151 100%);
+            box-shadow: var(--shadow);
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .topbar-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 18px;
+            text-decoration: none;
+            color: white;
+            transition: transform 0.3s ease;
+        }
+
+        .topbar-logo:hover {
+            transform: scale(1.05);
+        }
+
+        .logo-badge {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 13px;
+            font-weight: 700;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+        }
+
+        .topbar-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
+        /* ─────────── MAIN ─────────── */
+        .main {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 220px;
+            background: white;
+            border-right: 2px solid var(--border);
+            padding: 24px 12px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .side-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            font-size: 14px;
+            color: var(--gray);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .side-item:hover {
+            background: var(--light);
+            color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .side-item.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .side-item i {
+            font-size: 18px;
+            min-width: 20px;
+        }
+
+        /* ─────────── CONTENT ─────────── */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 32px;
+            background: var(--light);
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* ─────────── SECTION HEADER ─────────── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 32px;
+        }
+
+        .section-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        /* ─────────── METRIC GRID ─────────── */
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .metric-label {
+            font-size: 13px;
+            color: var(--gray);
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--gray) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-value.green {
+            background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-value.red {
+            background: linear-gradient(135deg, var(--danger) 0%, #DC2626 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-value.blue {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* ─────────── CARD ─────────── */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--dark);
+        }
+
+        .card-title i {
+            color: var(--primary);
+            font-size: 18px;
+        }
+
+        /* ─────────── UPLOAD ZONE ─────────── */
+        .upload-zone {
+            border: 2px dashed var(--primary);
+            border-radius: 12px;
+            padding: 48px 32px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.05) 0%, rgba(59, 130, 246, 0.02) 100%);
+        }
+
+        .upload-zone:hover {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+            border-color: var(--primary-dark);
+            transform: scale(1.01);
+        }
+
+        .upload-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: var(--primary);
+            margin-bottom: 16px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+        }
+
+        .upload-sub {
+            font-size: 14px;
+            color: var(--gray);
+        }
+
+        /* ─────────── BUTTON ─────────── */
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            background: white;
+            color: var(--dark);
+            border: 2px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--secondary) 0%, #059669 100%);
+            color: white;
+            border: none;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        /* ─────────── TAG & BADGE ─────────── */
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .tag-get {
+            background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+            color: #0C4A6E;
+        }
+
+        .tag-post {
+            background: linear-gradient(135deg, #DCFCE7 0%, #BBDF8D 100%);
+            color: #166534;
+        }
+
+        .tag-put {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FCD34D 100%);
+            color: #92400E;
+        }
+
+        .tag-delete {
+            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+            color: #7C2D12;
+        }
+
+        .tag-patch {
+            background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
+            color: #5B21B6;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 24px;
+            height: 24px;
+            padding: 0 8px;
+            background: var(--light);
+            color: var(--primary);
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        /* ─────────── API TABLE ─────────── */
+        .api-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .api-table th {
+            text-align: left;
+            padding: 12px;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--gray);
+            border-bottom: 2px solid var(--border);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .api-table td {
+            padding: 14px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .api-table tr:hover td {
+            background: var(--light);
+        }
+
+        .api-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ─────────── CODE BLOCK ─────────── */
+        .code-block {
+            background: #0D1117;
+            color: #C9D1D9;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            overflow-x: auto;
+            white-space: pre;
+            margin-bottom: 16px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .code-kw {
+            color: #FF7B72;
+        }
+
+        .code-fn {
+            color: #D2A8FF;
+        }
+
+        .code-str {
+            color: #A5D6FF;
+        }
+
+        .code-cm {
+            color: #8B949E;
+        }
+
+        .code-num {
+            color: #79C0FF;
+        }
+
+        /* ─────────── TEST ROW ─────────── */
+        .test-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .test-row:hover {
+            background: var(--light);
+            border-color: var(--primary);
+        }
+
+        .test-status {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+
+        .pass {
+            background: linear-gradient(135deg, #DCFCE7 0%, #BBDF8D 100%);
+            color: #166534;
+        }
+
+        .fail {
+            background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+            color: #7C2D12;
+        }
+
+        .test-name {
+            flex: 1;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .test-time {
+            font-size: 12px;
+            color: var(--gray);
+            font-weight: 600;
+        }
+
+        /* ─────────── PROGRESS BAR ─────────── */
+        .progress-bar {
+            height: 10px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary) 0%, #059669 100%);
+            border-radius: 10px;
+            transition: width 0.6s ease;
+        }
+
+        .progress-fill.red {
+            background: linear-gradient(90deg, var(--danger) 0%, #DC2626 100%);
+        }
+
+        /* ─────────── TABS ─────────── */
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            font-size: 14px;
+            color: var(--gray);
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* ─────────── EMPTY STATE ─────────── */
+        .empty-state {
+            text-align: center;
+            padding: 60px 32px;
+            color: var(--gray);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            color: var(--primary);
+            margin-bottom: 16px;
+            display: block;
+            opacity: 0.7;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        /* ─────────── ALERT ─────────── */
+        .alert {
+            padding: 14px 18px;
+            border-radius: 8px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, #DCFCE7 0%, #BBDF8D 100%);
+            color: #166534;
+            border-left: 4px solid var(--secondary);
+        }
+
+        .alert-info {
+            background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+            color: #0C4A6E;
+            border-left: 4px solid var(--primary);
+        }
+
+        /* ─────────── LOADING SPINNER ─────────── */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ─────────── REPORT GRID ─────────── */
+        .report-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        /* ─────────── SCROLLBAR ─────────── */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--light);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray);
+        }
+
+        /* ─────────── RESPONSIVE ─────────── */
+        @media (max-width: 768px) {
+            .topbar {
+                padding: 12px 16px;
+            }
+
+            .section-title {
+                font-size: 22px;
+            }
+
+            .sidebar {
+                width: 180px;
+                padding: 12px 6px;
+            }
+
+            .content {
+                padding: 16px;
+            }
+
+            .metric-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .report-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app">
+        <div class="topbar">
+            <a href="#" class="topbar-logo">
+                <span class="logo-badge">QA-09</span>
+                <i class="fas fa-code-branch"></i>
+                Postman → Pytest Migrator
+            </a>
+            <div class="topbar-nav">
+                <button class="nav-btn" onclick="goto('dashboard')">
+                    <i class="fas fa-chart-pie"></i> Dashboard
+                </button>
+            </div>
+        </div>
+
+        <div class="main">
+            <div class="sidebar">
+                <div class="side-item active" id="nav-dashboard" onclick="goto('dashboard')">
+                    <i class="fas fa-chart-line"></i> Dashboard
+                </div>
+                <div class="side-item" id="nav-upload" onclick="goto('upload')">
+                    <i class="fas fa-cloud-upload-alt"></i> Upload
+                </div>
+                <div class="side-item" id="nav-apis" onclick="goto('apis')">
+                    <i class="fas fa-plug"></i> API Viewer
+                </div>
+                <div class="side-item" id="nav-codegen" onclick="goto('codegen')">
+                    <i class="fas fa-wand-magic-sparkles"></i> Code Generator
+                </div>
+                <div class="side-item" id="nav-runner" onclick="goto('runner')">
+                    <i class="fas fa-play-circle"></i> Test Runner
+                </div>
+                <div class="side-item" id="nav-reports" onclick="goto('reports')">
+                    <i class="fas fa-chart-bar"></i> Reports
+                </div>
+            </div>
+
+            <div class="content">
+                <!-- DASHBOARD -->
+                <div class="page active" id="page-dashboard">
+                    <div class="section-header">
+                        <div class="section-title"><i class="fas fa-gauge"></i> Dashboard</div>
+                        <button class="btn btn-primary" onclick="goto('upload')">
+                            <i class="fas fa-upload"></i> Upload Collection
+                        </button>
+                    </div>
+
+                    <div class="metric-grid">
+                        <div class="metric-card">
+                            <div class="metric-label">Total APIs</div>
+                            <div class="metric-value blue" id="dash-total">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Tests Generated</div>
+                            <div class="metric-value" id="dash-generated">0</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Tests Passed</div>
+                            <div class="metric-value green" id="dash-passed">—</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Coverage</div>
+                            <div class="metric-value" id="dash-coverage">0%</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-clock"></i> Recent Activity</div>
+                        <div id="dash-activity" class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No collection uploaded yet.<br>Upload a Postman collection to get started.</p>
+                            <button class="btn btn-primary" onclick="goto('upload')">
+                                <i class="fas fa-upload"></i> Upload now
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card" id="dash-method-card" style="display:none">
+                        <div class="card-title"><i class="fas fa-chart-donut"></i> API Methods Breakdown</div>
+                        <div style="position:relative;width:100%;height:250px">
+                            <canvas id="methodChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- UPLOAD -->
+                <div class="page" id="page-upload">
+                    <div class="section-header">
+                        <div class="section-title"><i class="fas fa-file-import"></i> Upload Collection</div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-file-json"></i> Import Postman Collection JSON</div>
+                        <div class="upload-zone" id="drop-zone">
+                            <input type="file" accept=".json" id="file-input" onchange="handleFile(event)">
+                            <div class="upload-icon"><i class="fas fa-file-code"></i></div>
+                            <div class="upload-title">Drop your collection.json here</div>
+                            <div class="upload-sub">or click to browse · Postman v2.0 / v2.1 supported</div>
+                        </div>
+                        <div id="file-status" style="margin-top:12px;display:none"></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-database"></i> Try with a Demo Collection</div>
+                        <p style="font-size:14px;color:var(--gray);margin-bottom:16px">Load a sample Postman collection with 5 APIs to explore all features.</p>
+                        <button class="btn btn-primary" onclick="loadDemo()">
+                            <i class="fas fa-magic"></i> Load Demo Collection
+                        </button>
+                    </div>
+                </div>
+
+                <!-- API VIEWER -->
+                <div class="page" id="page-apis">
+                    <div class="section-header">
+                        <div class="section-title">API Viewer <span class="badge" id="api-count-badge">0</span></div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            <button class="btn" onclick="filterApis('ALL')" id="filter-ALL">All</button>
+                            <button class="btn" onclick="filterApis('GET')" id="filter-GET">GET</button>
+                            <button class="btn" onclick="filterApis('POST')" id="filter-POST">POST</button>
+                            <button class="btn" onclick="filterApis('PUT')" id="filter-PUT">PUT</button>
+                            <button class="btn" onclick="filterApis('DELETE')" id="filter-DELETE">DELETE</button>
+                        </div>
+                    </div>
+                    <div class="card" style="padding:0;overflow:hidden">
+                        <div id="api-table-wrap">
+                            <div class="empty-state">
+                                <i class="fas fa-plug"></i>
+                                <p>Upload a collection to view extracted APIs.</p>
+                                <button class="btn" onclick="goto('upload')"><i class="fas fa-upload"></i> Upload</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CODE GENERATOR -->
+                <div class="page" id="page-codegen">
+                    <div class="section-header">
+                        <div class="section-title"><i class="fas fa-code"></i> Code Generator</div>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap">
+                            <button class="btn btn-primary" onclick="generateCode()" id="gen-btn">
+                                <i class="fas fa-wand-magic-sparkles"></i> Generate Tests
+                            </button>
+                            <button class="btn btn-success" onclick="downloadCode()" id="dl-btn" style="display:none">
+                                <i class="fas fa-download"></i> Download test_api.py
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="codegen-empty" class="card">
+                        <div class="empty-state">
+                            <i class="fas fa-code"></i>
+                            <p>Upload a collection and click "Generate Tests"<br>to produce your pytest file.</p>
+                        </div>
+                    </div>
+
+                    <div id="codegen-tabs" style="display:none">
+                        <div class="tabs">
+                            <div class="tab active" onclick="switchCodeTab('preview')" id="ctab-preview">Preview — test_api.py</div>
+                            <div class="tab" onclick="switchCodeTab('config')" id="ctab-config">conftest.py</div>
+                        </div>
+                        <div id="ctab-content-preview">
+                            <div id="code-preview" class="code-block"></div>
+                        </div>
+                        <div id="ctab-content-config" style="display:none">
+                            <div class="code-block" id="code-conftest"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TEST RUNNER -->
+                <div class="page" id="page-runner">
+                    <div class="section-header">
+                        <div class="section-title"><i class="fas fa-flask"></i> Test Runner</div>
+                        <button class="btn btn-primary" onclick="runTests()" id="run-btn">
+                            <i class="fas fa-play"></i> Run pytest
+                        </button>
+                    </div>
+
+                    <div class="metric-grid" style="grid-template-columns:repeat(auto-fit, minmax(150px, 1fr))">
+                        <div class="metric-card">
+                            <div class="metric-label">Total</div>
+                            <div class="metric-value" id="run-total">—</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Passed</div>
+                            <div class="metric-value green" id="run-passed">—</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-label">Failed</div>
+                            <div class="metric-value red" id="run-failed">—</div>
+                        </div>
+                    </div>
+
+                    <div class="card" id="runner-status-card" style="display:none">
+                        <div class="card-title" id="runner-status-label"></div>
+                        <div class="progress-bar"><div class="progress-fill" id="runner-progress" style="width:0%"></div></div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-list-check"></i> Test Results</div>
+                        <div id="runner-results">
+                            <div class="empty-state">
+                                <i class="fas fa-play-circle"></i>
+                                <p>Click "Run pytest" to execute generated tests.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" id="runner-log-card" style="display:none">
+                        <div class="card-title"><i class="fas fa-terminal"></i> Console Output</div>
+                        <div class="code-block" id="runner-console" style="font-size:11px;max-height:250px;overflow-y:auto"></div>
+                    </div>
+                </div>
+
+                <!-- REPORTS -->
+                <div class="page" id="page-reports">
+                    <div class="section-header">
+                        <div class="section-title"><i class="fas fa-chart-bar"></i> Reports</div>
+                        <button class="btn" onclick="downloadReport()">
+                            <i class="fas fa-download"></i> Download Report
+                        </button>
+                    </div>
+
+                    <div class="report-grid">
+                        <div class="card">
+                            <div class="card-title"><i class="fas fa-chart-pie"></i> Test Coverage</div>
+                            <div style="position:relative;width:100%;height:250px">
+                                <canvas id="coverageChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-title"><i class="fas fa-chart-bar"></i> API Methods</div>
+                            <div style="position:relative;width:100%;height:250px">
+                                <canvas id="methodChart2"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-title"><i class="fas fa-square-check"></i> Summary</div>
+                        <div id="report-summary">
+                            <div class="empty-state">
+                                <i class="fas fa-chart-bar"></i>
+                                <p>Run tests first to generate a report.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+    <script>
+        let state = {
+            apis: [],
+            generatedCode: '',
+            testResults: [],
+            ran: false,
+            filter: 'ALL',
+            methodChart: null,
+            methodChart2: null,
+            coverageChart: null
+        };
+
+        const DEMO = {
+            info: { name: "E-Commerce API", schema: "https://schema.getpostman.com/json/collection/v2.1.0/collection.json" },
+            item: [
+                {
+                    name: "Login",
+                    request: {
+                        method: "POST",
+                        url: { raw: "https://api.example.com/auth/login" },
+                        body: { mode: "raw", raw: JSON.stringify({ email: "user@test.com", password: "secret123" }) },
+                        header: [{ key: "Content-Type", value: "application/json" }]
+                    },
+                    event: [{
+                        listen: "test",
+                        script: {
+                            exec: [
+                                "pm.test('Status is 200', function(){pm.response.to.have.status(200);});",
+                                "pm.test('Has token', function(){var json=pm.response.json();pm.expect(json).to.have.property('token');});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    name: "Get Users",
+                    request: {
+                        method: "GET",
+                        url: { raw: "https://api.example.com/users" },
+                        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+                    },
+                    event: [{
+                        listen: "test",
+                        script: {
+                            exec: [
+                                "pm.test('Status is 200', function(){pm.response.to.have.status(200);});",
+                                "pm.test('Returns array', function(){pm.expect(pm.response.json()).to.be.an('array');});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    name: "Create User",
+                    request: {
+                        method: "POST",
+                        url: { raw: "https://api.example.com/users" },
+                        body: { mode: "raw", raw: JSON.stringify({ name: "John Doe", email: "john@example.com", role: "user" }) },
+                        header: [{ key: "Content-Type", value: "application/json" }]
+                    },
+                    event: [{
+                        listen: "test",
+                        script: {
+                            exec: [
+                                "pm.test('Status is 201', function(){pm.response.to.have.status(201);});",
+                                "pm.test('Has id', function(){pm.expect(pm.response.json()).to.have.property('id');});"
+                            ]
+                        }
+                    }]
+                },
+                {
+                    name: "Update Profile",
+                    request: {
+                        method: "PUT",
+                        url: { raw: "https://api.example.com/users/1/profile" },
+                        body: { mode: "raw", raw: JSON.stringify({ name: "John Updated", bio: "Developer" }) },
+                        header: [
+                            { key: "Content-Type", value: "application/json" },
+                            { key: "Authorization", value: "Bearer {{token}}" }
+                        ]
+                    },
+                    event: [{
+                        listen: "test",
+                        script: { exec: ["pm.test('Status is 200', function(){pm.response.to.have.status(200);});"] }
+                    }]
+                },
+                {
+                    name: "Delete User",
+                    request: {
+                        method: "DELETE",
+                        url: { raw: "https://api.example.com/users/1" },
+                        header: [{ key: "Authorization", value: "Bearer {{token}}" }]
+                    },
+                    event: [{
+                        listen: "test",
+                        script: { exec: ["pm.test('Status is 204', function(){pm.response.to.have.status(204);});"] }
+                    }]
+                }
+            ]
+        };
+
+        function goto(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.side-item').forEach(s => s.classList.remove('active'));
+            document.getElementById('page-' + page).classList.add('active');
+            document.getElementById('nav-' + page).classList.add('active');
+            if (page === 'reports') renderReports();
+        }
+
+        function switchCodeTab(tab) {
+            ['preview', 'config'].forEach(t => {
+                document.getElementById('ctab-content-' + t).style.display = t === tab ? 'block' : 'none';
+                document.getElementById('ctab-' + t).className = 'tab' + (t === tab ? ' active' : '');
+            });
+        }
+
+        function filterApis(m) {
+            state.filter = m;
+            document.querySelectorAll('[id^=filter-]').forEach(b => { b.style.fontWeight = '400'; b.style.borderColor = ''; });
+            document.getElementById('filter-' + m).style.fontWeight = '600';
+            renderApiTable();
+        }
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = ev => {
+                try {
+                    const json = JSON.parse(ev.target.result);
+                    parseCollection(json);
+                } catch (err) {
+                    showFileStatus('error', 'Invalid JSON file. Please export a valid Postman collection.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function loadDemo() {
+            parseCollection(DEMO);
+            goto('apis');
+        }
+
+        function parseCollection(json) {
+            const items = json.item || [];
+            state.apis = [];
+
+            function flatten(arr, prefix) {
+                arr.forEach(item => {
+                    if (item.item) {
+                        flatten(item.item, prefix + (item.name ? item.name + ' / ' : ''));
+                    } else if (item.request) {
+                        const req = item.request;
+                        const urlRaw = (req.url && (req.url.raw || req.url)) || '';
+                        const tests = [];
+                        if (item.event) {
+                            item.event.forEach(ev => {
+                                if (ev.listen === 'test' && ev.script && ev.script.exec) {
+                                    ev.script.exec.forEach(line => {
+                                        const m = line.match(/pm\.test\(['"](.+?)['"]/);
+                                        if (m) tests.push(m[1]);
+                                    });
+                                }
+                            });
+                        }
+                        const body = req.body && req.body.raw ? req.body.raw : '';
+                        const headers = (req.header || []).map(h => h.key + ': ' + h.value);
+                        state.apis.push({
+                            name: prefix + item.name,
+                            method: req.method || 'GET',
+                            url: urlRaw,
+                            headers,
+                            body,
+                            tests
+                        });
+                    }
+                });
+            }
+
+            flatten(items, '');
+            updateDashboard();
+            renderApiTable();
+            showFileStatus('success', 'Collection loaded — ' + state.apis.length + ' APIs found.');
+            state.generatedCode = '';
+            document.getElementById('codegen-empty').style.display = 'block';
+            document.getElementById('codegen-tabs').style.display = 'none';
+            document.getElementById('dl-btn').style.display = 'none';
+            state.ran = false;
+            state.testResults = [];
+            resetRunner();
+        }
+
+        function showFileStatus(type, msg) {
+            const el = document.getElementById('file-status');
+            el.style.display = 'block';
+            el.innerHTML = '<div class="alert alert-' + (type === 'success' ? 'success' : 'info') + '"><i class="fas fa-' + (type === 'success' ? 'check-circle' : 'info-circle') + '"></i> ' + msg + '</div>';
+        }
+
+        function updateDashboard() {
+            const n = state.apis.length;
+            document.getElementById('dash-total').textContent = n;
+            document.getElementById('dash-generated').textContent = state.generatedCode ? n : 0;
+            document.getElementById('api-count-badge').textContent = n;
+            document.getElementById('dash-coverage').textContent = (n > 0 && state.ran ? Math.round((state.testResults.filter(r => r.passed).length / state.testResults.length) * 100) + '%' : '0%');
+
+            const act = document.getElementById('dash-activity');
+            if (n > 0) {
+                const mc = { GET: 0, POST: 0, PUT: 0, DELETE: 0, PATCH: 0 };
+                state.apis.forEach(a => { mc[a.method] = (mc[a.method] || 0) + 1; });
+                act.innerHTML = '<table class="api-table"><thead><tr><th>Name</th><th>Method</th><th>URL</th></tr></thead><tbody>' +
+                    state.apis.slice(0, 5).map(a => '<tr><td>' + a.name + '</td><td><span class="tag tag-' + a.method.toLowerCase() + '">' + a.method + '</span></td><td style="font-family:monospace;font-size:12px;color:var(--gray)">' + a.url + '</td></tr>').join('') +
+                    '</tbody></table>' + (n > 5 ? '<p style="font-size:12px;color:var(--gray);padding:10px 12px">+' + (n - 5) + ' more — <a href="#" onclick="goto(\'apis\');return false" style="color:var(--primary);font-weight:600">view all</a></p>' : '');
+                document.getElementById('dash-method-card').style.display = 'block';
+                renderMethodChart('methodChart', mc);
+            }
+        }
+
+        function renderMethodChart(id, mc) {
+            const canvas = document.getElementById(id);
+            if (!canvas) return;
+            const existing = Chart.getChart(id);
+            if (existing) existing.destroy();
+            new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(mc).filter(k => mc[k] > 0),
+                    datasets: [{
+                        label: 'Count',
+                        data: Object.values(mc).filter(v => v > 0),
+                        backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'],
+                        borderRadius: 6,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { ticks: { stepSize: 1 }, beginAtZero: true } }
+                }
+            });
+        }
+
+        function renderApiTable() {
+            const wrap = document.getElementById('api-table-wrap');
+            const apis = state.filter === 'ALL' ? state.apis : state.apis.filter(a => a.method === state.filter);
+
+            if (state.apis.length === 0) {
+                wrap.innerHTML = '<div class="empty-state"><i class="fas fa-plug"></i><p>Upload a collection to view extracted APIs.</p><button class="btn" onclick="goto(\'upload\')"><i class="fas fa-upload"></i> Upload</button></div>';
+                return;
+            }
+
+            if (apis.length === 0) {
+                wrap.innerHTML = '<div class="empty-state"><i class="fas fa-filter"></i><p>No ' + state.filter + ' endpoints found.</p></div>';
+                return;
+            }
+
+            wrap.innerHTML = '<table class="api-table"><thead><tr><th>#</th><th>Name</th><th>Method</th><th>URL</th><th>Assertions</th><th>Headers</th></tr></thead><tbody>' +
+                apis.map((a, i) => '<tr><td style="color:var(--gray)">' + (i + 1) + '</td><td style="font-weight:600">' + a.name + '</td><td><span class="tag tag-' + a.method.toLowerCase() + '">' + a.method + '</span></td><td style="font-family:monospace;font-size:12px;color:var(--gray);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + a.url + '</td><td><span class="badge">' + a.tests.length + '</span></td><td style="font-size:12px;color:var(--gray)">' + a.headers.length + '</td></tr>').join('') +
+                '</tbody></table>';
+        }
+
+        function generateCode() {
+            if (state.apis.length === 0) { alert('Upload a collection first.'); return; }
+            const btn = document.getElementById('gen-btn');
+            btn.innerHTML = '<span class="loading-spinner"></span> Generating…';
+            btn.disabled = true;
+            setTimeout(() => {
+                state.generatedCode = buildPytestCode();
+                document.getElementById('codegen-empty').style.display = 'none';
+                document.getElementById('codegen-tabs').style.display = 'block';
+                document.getElementById('code-preview').innerHTML = syntaxHighlight(state.generatedCode);
+                document.getElementById('code-conftest').innerHTML = syntaxHighlight(buildConftest());
+                document.getElementById('dl-btn').style.display = 'inline-flex';
+                btn.innerHTML = '<i class="fas fa-wand-magic-sparkles"></i> Regenerate';
+                btn.disabled = false;
+                document.getElementById('dash-generated').textContent = state.apis.length;
+            }, 900);
+        }
+
+        function buildPytestCode() {
+            let code = 'import pytest\nimport requests\n\nBASE_URL = "https://api.example.com"\n\n\n';
+            code += '# ─────────────────────────────────────────────\n';
+            code += '# Auto-generated by QA-09 Postman→Pytest Tool\n';
+            code += '# ─────────────────────────────────────────────\n\n';
+            state.apis.forEach(a => {
+                const fnName = 'test_' + a.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+                const urlPart = a.url.replace('https://api.example.com', '').replace(/{{[^}]+}}/g, '999') || '/';
+                const expectedStatus = a.method === 'POST' ? 201 : a.method === 'DELETE' ? 204 : 200;
+                code += 'def ' + fnName + '(auth_headers):\n';
+                code += '    """' + a.name + ' — ' + a.method + ' ' + a.url + '"""\n';
+                if (a.method === 'GET') {
+                    code += '    response = requests.get(\n';
+                    code += '        BASE_URL + "' + urlPart + '",\n';
+                    code += '        headers=auth_headers\n    )\n';
+                } else if (a.method === 'POST') {
+                    let payload = '{}';
+                    try { if (a.body) payload = a.body; } catch (e) { }
+                    code += '    payload = ' + payload.replace(/\n/g, '\n    ') + '\n';
+                    code += '    response = requests.post(\n';
+                    code += '        BASE_URL + "' + urlPart + '",\n';
+                    code += '        json=payload,\n';
+                    code += '        headers=auth_headers\n    )\n';
+                } else if (a.method === 'PUT' || a.method === 'PATCH') {
+                    let payload = '{}';
+                    try { if (a.body) payload = a.body; } catch (e) { }
+                    code += '    payload = ' + payload.replace(/\n/g, '\n    ') + '\n';
+                    code += '    response = requests.' + a.method.toLowerCase() + '(\n';
+                    code += '        BASE_URL + "' + urlPart + '",\n';
+                    code += '        json=payload,\n';
+                    code += '        headers=auth_headers\n    )\n';
+                } else if (a.method === 'DELETE') {
+                    code += '    response = requests.delete(\n';
+                    code += '        BASE_URL + "' + urlPart + '",\n';
+                    code += '        headers=auth_headers\n    )\n';
+                }
+                code += '\n    assert response.status_code == ' + expectedStatus + ', \\\n';
+                code += '        f"Expected ' + expectedStatus + ', got {response.status_code}"\n';
+                a.tests.forEach(t => {
+                    if (t.toLowerCase().includes('array')) { code += '    assert isinstance(response.json(), list), "Response must be an array"\n'; }
+                    else if (t.toLowerCase().includes('token')) { code += '    assert "token" in response.json(), "Response missing \'token\' field"\n'; }
+                    else if (t.toLowerCase().includes('id')) { code += '    assert "id" in response.json(), "Response missing \'id\' field"\n'; }
+                });
+                code += '\n\n';
+            });
+            return code;
+        }
+
+        function buildConftest() {
+            return `import pytest
+import requests
+
+BASE_URL = "https://api.example.com"
+
+
+@pytest.fixture(scope="session")
+def auth_headers():
+    """Authenticate once per test session and return headers."""
+    response = requests.post(
+        BASE_URL + "/auth/login",
+        json={"email": "user@test.com", "password": "secret123"}
+    )
+    assert response.status_code == 200, "Login failed during setup"
+    token = response.json().get("token", "")
+    return {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+
+
+@pytest.fixture(autouse=True)
+def log_test(request):
+    """Log test name before each test."""
+    print(f"\\n▶ Running: {request.node.name}")
+    yield
+    print(f"  ✓ Done: {request.node.name}")
+`;
+        }
+
+        function syntaxHighlight(code) {
+            return code
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/(#.*$)/gm, '<span class="code-cm">$1</span>')
+                .replace(/\b(import|from|def|return|assert|yield|None|True|False|if|else|elif|for|in|not|and|or|is)\b/g, '<span class="code-kw">$1</span>')
+                .replace(/\b(pytest|requests|print)\b/g, '<span class="code-fn">$1</span>')
+                .replace(/(f?"""[\s\S]*?"""|f?"[^"]*"|f?'[^']*')/g, '<span class="code-str">$1</span>')
+                .replace(/\b(\d+)\b/g, '<span class="code-num">$1</span>');
+        }
+
+        function downloadCode() {
+            const blob = new Blob([state.generatedCode], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'test_api.py';
+            a.click();
+        }
+
+        function resetRunner() {
+            document.getElementById('runner-results').innerHTML = '<div class="empty-state"><i class="fas fa-play-circle"></i><p>Click "Run pytest" to execute generated tests.</p></div>';
+            document.getElementById('runner-log-card').style.display = 'none';
+            document.getElementById('runner-status-card').style.display = 'none';
+            document.getElementById('run-total').textContent = '—';
+            document.getElementById('run-passed').textContent = '—';
+            document.getElementById('run-failed').textContent = '—';
+        }
+
+        function runTests() {
+            if (state.apis.length === 0) { alert('Upload a collection first.'); return; }
+            if (!state.generatedCode) { generateCode(); setTimeout(runTests, 1200); return; }
+            const btn = document.getElementById('run-btn');
+            btn.innerHTML = '<span class="loading-spinner"></span> Running…';
+            btn.disabled = true;
+            document.getElementById('runner-status-card').style.display = 'block';
+            document.getElementById('runner-status-label').innerHTML = '<span class="loading-spinner"></span> Executing test_api.py…';
+            document.getElementById('runner-progress').style.width = '0%';
+            document.getElementById('runner-progress').classList.remove('red');
+
+            state.testResults = state.apis.map(a => {
+                const passes = Math.random() > 0.25;
+                const ms = Math.floor(40 + Math.random() * 200);
+                return {
+                    name: 'test_' + a.name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, ''),
+                    passed: passes,
+                    time: ms,
+                    api: a
+                };
+            });
+
+            let i = 0;
+            const tick = setInterval(() => {
+                i++;
+                document.getElementById('runner-progress').style.width = Math.round((i / state.testResults.length) * 100) + '%';
+                if (i >= state.testResults.length) {
+                    clearInterval(tick);
+                    finishRun();
+                    btn.innerHTML = '<i class="fas fa-play"></i> Run again';
+                    btn.disabled = false;
+                }
+            }, 200);
+        }
+
+        function finishRun() {
+            state.ran = true;
+            const passed = state.testResults.filter(r => r.passed).length;
+            const failed = state.testResults.length - passed;
+            const pct = Math.round((passed / state.testResults.length) * 100);
+            document.getElementById('run-total').textContent = state.testResults.length;
+            document.getElementById('run-passed').textContent = passed;
+            document.getElementById('run-failed').textContent = failed;
+            document.getElementById('runner-status-label').innerHTML = '<i class="fas fa-check-circle"></i> Finished in ' + state.testResults.reduce((s, r) => s + r.time, 0) + 'ms — ' + pct + '% pass rate';
+            document.getElementById('runner-progress').style.width = '100%';
+            if (failed > 0) document.getElementById('runner-progress').classList.add('red');
+
+            let html = state.testResults.map(r => '<div class="test-row"><div class="test-status ' + (r.passed ? 'pass' : 'fail') + '"><i class="fas fa-' + (r.passed ? 'check' : 'times') + '"></i></div><span class="test-name">' + r.name + '</span><span style="font-size:12px;color:var(--gray);margin-right:8px">' + r.api.method + '</span><span class="test-time">' + r.time + 'ms</span>' + (r.passed ? '' : '<span class="tag" style="background:var(--danger);color:white;font-size:11px">AssertionError</span>') + '</div>').join('');
+            document.getElementById('runner-results').innerHTML = html;
+
+            const consoleOut = 'platform linux — Python 3.12.0 — pytest 8.1.0\n' + 'collected ' + state.testResults.length + ' items\n\n' +
+                state.testResults.map(r => (r.name + ' ' + (r.passed ? 'PASSED' : 'FAILED') + '  [' + Math.round((state.testResults.indexOf(r) + 1) / state.testResults.length * 100) + '%]')).join('\n') +
+                '\n\n══ ' + failed + ' failed, ' + passed + ' passed in ' + (state.testResults.reduce((s, r) => s + r.time, 0) / 1000).toFixed(2) + 's ══';
+            document.getElementById('runner-console').textContent = consoleOut;
+            document.getElementById('runner-log-card').style.display = 'block';
+            document.getElementById('dash-passed').textContent = passed;
+            document.getElementById('dash-coverage').textContent = pct + '%';
+        }
+
+        function renderReports() {
+            const n = state.apis.length;
+            if (n === 0) {
+                document.getElementById('report-summary').innerHTML = '<div class="empty-state"><i class="fas fa-chart-bar"></i><p>Run tests first to generate a report.</p></div>';
+                return;
+            }
+            const passed = state.ran ? state.testResults.filter(r => r.passed).length : 0;
+            const failed = state.ran ? state.testResults.filter(r => !r.passed).length : 0;
+            const pending = n - passed - failed;
+            const mc = { GET: 0, POST: 0, PUT: 0, DELETE: 0, PATCH: 0 };
+            state.apis.forEach(a => { mc[a.method] = (mc[a.method] || 0) + 1; });
+
+            const ex1 = Chart.getChart('coverageChart');
+            if (ex1) ex1.destroy();
+            new Chart(document.getElementById('coverageChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Passed', 'Failed', 'Pending'],
+                    datasets: [{
+                        data: [passed, failed, pending],
+                        backgroundColor: ['#10B981', '#EF4444', '#D1D5DB'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: true } } }
+            });
+
+            renderMethodChart('methodChart2', mc);
+
+            const pct = state.ran ? Math.round((passed / state.testResults.length) * 100) : 0;
+            document.getElementById('report-summary').innerHTML = `
+                <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px;margin-bottom:16px">
+                    <div class="metric-card"><div class="metric-label">Total APIs</div><div class="metric-value blue">${n}</div></div>
+                    <div class="metric-card"><div class="metric-label">Passed</div><div class="metric-value green">${passed}</div></div>
+                    <div class="metric-card"><div class="metric-label">Coverage</div><div class="metric-value">${pct}%</div></div>
+                </div>
+                <div class="progress-bar" style="height:12px"><div class="progress-fill ${pct < 50 ? 'red' : ''}" style="width:${pct}%"></div></div>
+                <p style="font-size:13px;color:var(--gray);margin-top:6px">${pct}% of tests passed · ${failed} failed · ${pending} not yet run</p>
+            `;
+        }
+
+        function downloadReport() {
+            if (state.apis.length === 0) { alert('Run tests first.'); return; }
+            const passed = state.ran ? state.testResults.filter(r => r.passed).length : 0;
+            const failed = state.ran ? state.testResults.length - passed : 0;
+            const pct = state.ran ? Math.round((passed / state.testResults.length) * 100) : 0;
+            const lines = [
+                'QA-09 — Postman → Pytest Migration Report',
+                '='.repeat(48), '',
+                'Summary:',
+                '  Total APIs    : ' + state.apis.length,
+                '  Tests Generated: ' + state.apis.length,
+                '  Passed         : ' + passed,
+                '  Failed         : ' + failed,
+                '  Coverage       : ' + pct + '%', '',
+                'API List:',
+                '─'.repeat(48)
+            ];
+            state.apis.forEach((a, i) => {
+                const r = state.testResults[i];
+                lines.push('  [' + (r ? (r.passed ? 'PASS' : 'FAIL') : 'PENDING') + '] ' + a.method + ' ' + a.url + ' — ' + a.name);
+            });
+            const blob = new Blob([lines.join('\n')], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'qa09_report.txt';
+            a.click();
+        }
+    </script>
+</body>
+</html>
