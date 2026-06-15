@@ -1,0 +1,8 @@
+Objective: Verify that a valid Postman Collection JSON file uploads successfully.
+Input:
+Valid Postman Collection (.json)
+Expected Result:
+File uploads successfully.
+Collection is parsed.
+Pytest script is generated.
+Status: Pass
