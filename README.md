@@ -2,3 +2,6 @@
 The Postman Collection to Pytest Migrator is a tool that automatically converts Postman API collections into Pytest test scripts. It extracts API details from a JSON file, generates automation code, executes test cases, and produces reports. This reduces manual effort, saves time, and improves testing efficiency
 This project code is implemented in visual studio to get a respective outcome.
 the project code is also uploaded...
+
+
+https://www.loom.com/share/e7ed349221264aeda75522d3685af9fb
